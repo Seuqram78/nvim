@@ -1,0 +1,2 @@
+require("seuqram")
+print("hello")
