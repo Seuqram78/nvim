@@ -28,7 +28,11 @@ return require('packer').startup(function(use)
   use('hrsh7th/nvim-cmp')
 
   use('mason-org/mason.nvim', {tag = 'v1.11.0', pin = true})
-  
+
   use('mason-org/mason-lspconfig.nvim', {tag = 'v1.32.0', pin = true})
 
+  -- nvim v0.7.2
+  use({
+      "kdheepak/lazygit.nvim",
+  })
 end)
