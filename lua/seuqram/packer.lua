@@ -36,4 +36,9 @@ return require('packer').startup(function(use)
   })
 
   use ("akinsho/toggleterm.nvim", {tag = '*'})
+
+  use (
+      "WhoIsSethDaniel/mason-tool-installer.nvim", 
+      { requires = "williamboman/mason.nvim" }
+  )
 end)

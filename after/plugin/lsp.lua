@@ -36,6 +36,19 @@ require('mason-lspconfig').setup({
   },
 })
 
+require("mason-tool-installer").setup({
+    ensure_installed = {
+        "black",
+        "flake8",
+        "mypy",
+        "pylint",
+        "pyright",
+        "ruff",
+    },
+    auto_update = true,       -- optional: update registry on startup
+    run_on_start = true,      -- install missing tools on startup
+})
+
 local cmp = require('cmp')
 
 cmp.setup({
