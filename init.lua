@@ -1,2 +1,1 @@
 require("seuqram")
-print("hello")
