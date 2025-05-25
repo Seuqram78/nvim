@@ -31,8 +31,9 @@ return require('packer').startup(function(use)
 
   use('mason-org/mason-lspconfig.nvim', {tag = 'v1.32.0', pin = true})
 
-  -- nvim v0.7.2
   use({
       "kdheepak/lazygit.nvim",
   })
+
+  use ("akinsho/toggleterm.nvim", {tag = '*'})
 end)
