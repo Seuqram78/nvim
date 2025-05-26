@@ -7,6 +7,16 @@ lspconfig_defaults.capabilities = vim.tbl_deep_extend(
     require('cmp_nvim_lsp').default_capabilities()
 )
 
+require('lspconfig').lua_ls.setup {
+    settings = {
+        Lua = {
+            diagnostics = {
+                globals = { 'vim' }, -- Tell lua_ls that 'vim' is a global variable
+            },
+        },
+    },
+}
+
 -- This is where you enable features that only work
 -- if there is a language server active in the file
 vim.api.nvim_create_autocmd('LspAttach', {
@@ -84,4 +94,4 @@ vim.api.nvim_create_autocmd("BufWritePre", {
             end
         end
     end,
-})
+}) 
