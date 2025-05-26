@@ -41,4 +41,6 @@ return require('packer').startup(function(use)
         "WhoIsSethDaniel/mason-tool-installer.nvim",
         { requires = "williamboman/mason.nvim" }
     )
+
+    use { 'akinsho/bufferline.nvim', tag = "*", requires = 'nvim-tree/nvim-web-devicons' }
 end)
