@@ -1,3 +1,9 @@
+### 0. System deps
+
+- pyenv
+- nvm
+- sudo apt install ripgrep
+
 ### 1. packer.nvim
 
 To install [packer.nvim](https://github.com/wbthomason/packer.nvim), run the following command in your terminal:
