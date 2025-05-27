@@ -48,12 +48,20 @@ require('mason-lspconfig').setup({
 
 require("mason-tool-installer").setup({
     ensure_installed = {
+        "angular-language-server angularls",
         "black",
         "flake8",
+        "java-debug-adapter",
+        "java-test",
+        "jdtls",
+        "lua-language-server lua_ls",
         "mypy",
         "pylint",
         "pyright",
         "ruff",
+        "typescript-language-server ts_ls",
+
+
     },
     auto_update = true,  -- optional: update registry on startup
     run_on_start = true, -- install missing tools on startup
@@ -94,4 +102,4 @@ vim.api.nvim_create_autocmd("BufWritePre", {
             end
         end
     end,
-}) 
+})
