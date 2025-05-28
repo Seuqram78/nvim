@@ -48,18 +48,15 @@ require('mason-lspconfig').setup({
 
 require("mason-tool-installer").setup({
     ensure_installed = {
-        "angular-language-server angularls",
+        "angular-language-server",
         "black",
         "flake8",
-        "java-debug-adapter",
-        "java-test",
-        "jdtls",
-        "lua-language-server lua_ls",
+        "lua-language-server",
         "mypy",
         "pylint",
         "pyright",
         "ruff",
-        "typescript-language-server ts_ls",
+        "typescript-language-server",
 
 
     },
