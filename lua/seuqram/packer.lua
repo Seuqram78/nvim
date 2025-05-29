@@ -17,8 +17,6 @@ return require('packer').startup(function(use)
 
     use('ThePrimeagen/harpoon')
 
-    use('tpope/vim-fugitive')
-
     use('mbbill/undotree')
 
     use('neovim/nvim-lspconfig', { tag = 'v1.8.0', pin = true })
@@ -42,5 +40,9 @@ return require('packer').startup(function(use)
         { requires = "williamboman/mason.nvim" }
     )
 
-    use { 'akinsho/bufferline.nvim', tag = "*", requires = 'nvim-tree/nvim-web-devicons' }
+    use("folke/which-key.nvim")
+
+    use { 'rcarriga/nvim-dap-ui' }
+
+    use { 'mxsdev/nvim-dap-vscode-js', requires = { 'mfussenegger/nvim-dap' } }
 end)
