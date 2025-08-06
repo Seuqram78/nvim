@@ -25,6 +25,13 @@ require("nvim-treesitter.configs").setup({
 
 require("mini.files").setup()
 
+require("lualine").setup({
+	sections = {
+		lualine_c = { "filename", "lsp_status" },
+	},
+	options = { theme = "gruvbox" },
+})
+
 -- Telescope
 local ok, telescope = pcall(require, "telescope")
 local actions = require("telescope.actions")
