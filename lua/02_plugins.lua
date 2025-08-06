@@ -55,6 +55,10 @@ require("lazy").setup({
 			config = true,
 		},
 		{ "echasnovski/mini.files", version = false, setup = true },
+		{
+			"nvim-lualine/lualine.nvim",
+			dependencies = { "nvim-tree/nvim-web-devicons" },
+		},
 	},
 	-- automatically check for plugin updates
 	checker = { enabled = true },
