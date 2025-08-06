@@ -60,6 +60,7 @@ require("lazy").setup({
 			dependencies = { "nvim-tree/nvim-web-devicons" },
 		},
 		{ "mbbill/undotree" },
+		{ "ellisonleao/gruvbox.nvim", priority = 1000, config = true, opts = ... },
 	},
 	-- automatically check for plugin updates
 	checker = { enabled = true },
