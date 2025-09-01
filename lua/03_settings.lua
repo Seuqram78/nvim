@@ -113,6 +113,47 @@ dap.configurations.python = {
     end,
   },
 }
+
+dap.adapters.coreclr = {
+  type = 'executable',
+  command = '/opt/netcoredbg/netcoredbg',
+  args = { '--interpreter=vscode' }
+}
+
+dap.configurations.cs = {
+  {
+    type = 'coreclr',
+    name = 'launch - netcoredbg',
+    request = 'launch',
+    program = function()
+      return vim.fn.input('Path to dll')
+    end
+  }
+}
+
+dap.configurations.cs = {
+  {
+    type = 'coreclr',
+    name = 'launch - netcoredbg',
+    request = 'launch',
+    program = function()
+      -- Build the project (assumes .csproj is in current working directory)
+      local cwd = vim.fn.getcwd()
+      vim.fn.system('dotnet build ' .. cwd)
+      -- Find the DLL (assumes project name matches directory name)
+      local project_name = vim.fn.fnamemodify(cwd, ':t')
+      local glob = cwd .. '/bin/Debug/net*/' .. project_name .. '.dll'
+      local dlls = vim.fn.glob(glob, 0, 1)
+      if #dlls > 0 then
+        return dlls[1]
+      else
+        -- Prompt if not found
+        return vim.fn.input('Path to dll: ', cwd .. '/bin/Debug/net9.0/', 'file')
+      end
+    end,
+  },
+}
+
 require("nvim-dap-virtual-text").setup({
   -- optional settings
   commented = true, -- show virtual text as comments
@@ -158,15 +199,6 @@ lspconfig.lua_ls.setup({
   },
 })
 
--- lspconfig.pyright.setup({
---   settings = {
---     python = {
---       analysis = {
---         autoImportCompletions = true,
---         autoSearchPaths = true,
---         diagnosticMode = "workspace",
---         useLibraryCodeForTypes = true,
---       },
---     },
---   },
--- })
+lspconfig.omnisharp.setup({
+  cmd = { vim.fn.stdpath "data" .. "/mason/bin/OmniSharp", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
+})
