@@ -147,8 +147,15 @@ dap.configurations.cs = {
       if #dlls > 0 then
         return dlls[1]
       else
-        -- Prompt if not found
-        return vim.fn.input('Path to dll: ', cwd .. '/bin/Debug/net9.0/', 'file')
+        -- glob = cwd .. 'App/bin/Debug/net*/' .. project_name .. '.dll'
+        glob = cwd .. '/App/bin/Debug/net*/App.dll'
+        dlls = vim.fn.glob(glob, 0, 1)
+        if #dlls > 0 then
+          return dlls[1]
+        else
+          -- Prompt if not found
+          return vim.fn.input('Path to dll: ', cwd .. '/bin/Debug/net9.0/', 'file')
+        end
       end
     end,
   },
@@ -186,7 +193,6 @@ lspconfig.lua_ls.setup({
   capabilities = capabilities,
   settings = {
     Lua = {
-      runtime = { version = "LuaJIT" },
       diagnostics = {
         globals = { "vim" }, -- Recognize `vim` as a global
       },
