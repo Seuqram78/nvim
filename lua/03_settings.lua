@@ -94,6 +94,24 @@ require("conform").setup({
 })
 
 -- DAP
+require("dapui").setup({
+  layout = {
+    {
+      elements = {
+        { id = 'scopes',      size = 0.33 },
+        { id = 'breakpoints', size = 0.33 },
+        { id = 'stacks',      size = 0.33 },
+      },
+      size = 40,
+      position = "left",
+    },
+    {
+      elements = { { id = "console", size = 1.0 } },
+      size = 15,
+      position = "bottom",
+    },
+  },
+})
 local dap = require("dap")
 
 dap.adapters.python = {
@@ -186,13 +204,13 @@ cmp.setup({
   },
 })
 
-local lspconfig = require("lspconfig")
 local capabilities = require("cmp_nvim_lsp").default_capabilities()
 
-lspconfig.lua_ls.setup({
+vim.lsp.config("lua_ls", {
   capabilities = capabilities,
   settings = {
     Lua = {
+      runtime = { version = "LuaJIT" },
       diagnostics = {
         globals = { "vim" }, -- Recognize `vim` as a global
       },
@@ -205,6 +223,8 @@ lspconfig.lua_ls.setup({
   },
 })
 
-lspconfig.omnisharp.setup({
+vim.lsp.enable('lua_ls')
+
+vim.lsp.config('omnisharp', {
   cmd = { vim.fn.stdpath "data" .. "/mason/bin/OmniSharp", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
 })
