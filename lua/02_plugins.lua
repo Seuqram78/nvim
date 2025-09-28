@@ -15,9 +15,6 @@ require("lazy").setup({
         "mfussenegger/nvim-dap",
         "nvim-neotest/nvim-nio",
       },
-      config = function()
-        require("dapui").setup({})
-      end,
     },
     { "theHamsta/nvim-dap-virtual-text" },
     { "akinsho/toggleterm.nvim",        version = "*", config = true },
@@ -67,20 +64,6 @@ require("lazy").setup({
       branch = "harpoon2",
       dependencies = { "nvim-lua/plenary.nvim" }
     },
-    {
-      "folke/which-key.nvim",
-      event = "VeryLazy",
-      opts = {},
-      keys = {
-        {
-          "<leader>?",
-          function()
-            require("which-key").show({ global = false })
-          end,
-          desc = "Buffer Local Keymaps (which-key)",
-        },
-      },
-    }
   },
   -- automatically check for plugin updates
   checker = { enabled = true },

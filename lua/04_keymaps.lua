@@ -49,6 +49,9 @@ local dap = require("dap")
 vim.keymap.set("n", "<F5>", function()
   dap.continue()
 end, { desc = "DAP: Continue" })
+vim.keymap.set("n", "<F6>", function()
+  dap.terminate()
+end, { desc = "DAP: Terminate" })
 vim.keymap.set("n", "<F7>", function()
   dap.step_into()
 end, { desc = "DAP: Step Into" })
@@ -61,6 +64,9 @@ end, { desc = "DAP: Resume" })
 vim.keymap.set("n", "<leader>bb", function()
   dap.toggle_breakpoint()
 end, { desc = "DAP: Toggle Breakpoint" })
+vim.keymap.set("n", "<F56>", function()
+  require("dapui").float_element("repl")
+end, { desc = "DAP: Open evaluate window" })
 
 -- DAP UI
 local dapui = require("dapui")
@@ -71,6 +77,7 @@ end, { desc = "DAP UI Open" })
 vim.keymap.set("n", "<leader>dc", function()
   dapui.close()
 end, { desc = "DAP UI Close" })
+
 
 -- Toggleterm
 vim.keymap.set("n", "<leader>hh", "<cmd>ToggleTerm direction=float<CR>", { desc = "Open/close floating terminal" })
