@@ -73,15 +73,23 @@ require("lazy").setup({
         "nvim-treesitter/nvim-treesitter",
       },
     },
-    { 'github/copilot.vim' },
+    -- { 'github/copilot.vim' },
+    -- {
+    --   "CopilotC-Nvim/CopilotChat.nvim",
+    --   dependencies = {
+    --     { "nvim-lua/plenary.nvim", branch = "master" },
+    --   },
+    --   build = "make tiktoken",
+    --   opts = {
+    --     -- See Configuration section for options
+    --   },
+    -- },
     {
-      "CopilotC-Nvim/CopilotChat.nvim",
+      "olimorris/codecompanion.nvim",
+      opts = {},
       dependencies = {
-        { "nvim-lua/plenary.nvim", branch = "master" },
-      },
-      build = "make tiktoken",
-      opts = {
-        -- See Configuration section for options
+        "nvim-lua/plenary.nvim",
+        "nvim-treesitter/nvim-treesitter",
       },
     },
   },
