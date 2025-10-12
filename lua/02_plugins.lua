@@ -73,7 +73,7 @@ require("lazy").setup({
         "nvim-treesitter/nvim-treesitter",
       },
     },
-    -- { 'github/copilot.vim' },
+    { 'github/copilot.vim' },
     -- {
     --   "CopilotC-Nvim/CopilotChat.nvim",
     --   dependencies = {
