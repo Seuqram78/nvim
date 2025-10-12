@@ -7,7 +7,8 @@ require("lazy").setup({
       tag = "0.1.8",
       dependencies = { "nvim-lua/plenary.nvim" },
     },
-    { "stevearc/conform.nvim", opts = {} },
+    { 'nvim-telescope/telescope-ui-select.nvim' },
+    { "stevearc/conform.nvim",                  opts = {} },
     { "mfussenegger/nvim-dap" },
     {
       "rcarriga/nvim-dap-ui",
@@ -64,7 +65,27 @@ require("lazy").setup({
       branch = "harpoon2",
       dependencies = { "nvim-lua/plenary.nvim" }
     },
+    {
+      "olimorris/codecompanion.nvim",
+      opts = {},
+      dependencies = {
+        "nvim-lua/plenary.nvim",
+        "nvim-treesitter/nvim-treesitter",
+      },
+    },
+    { 'github/copilot.vim' },
+    {
+      "CopilotC-Nvim/CopilotChat.nvim",
+      dependencies = {
+        { "nvim-lua/plenary.nvim", branch = "master" },
+      },
+      build = "make tiktoken",
+      opts = {
+        -- See Configuration section for options
+      },
+    },
   },
+  --
   -- automatically check for plugin updates
   checker = { enabled = true },
 })

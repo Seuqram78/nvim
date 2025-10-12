@@ -51,6 +51,11 @@ if ok then
         },
       },
     },
+    extensions = {
+      ["ui-select"] = {
+        require("telescope.themes").get_dropdown {}
+      }
+    },
     pickers = {
       find_files = {
         hidden = true,    --Show hidden files (dotfiles)
@@ -60,6 +65,7 @@ if ok then
     },
   })
 end
+telescope.load_extension("ui-select")
 
 -- Conform
 require("conform").setup({
