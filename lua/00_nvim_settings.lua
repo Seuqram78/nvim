@@ -20,3 +20,5 @@ vim.o.scrolloff = 999
 vim.o.sidescrolloff = 8
 vim.o.splitbelow = true
 vim.o.splitright = true
+vim.opt_local.list = true
+vim.opt_local.listchars = { tab = ">", space = ".", eol = "^" }
