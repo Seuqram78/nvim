@@ -25,7 +25,7 @@ vim.keymap.set("n", "<leader>ts", function()
 end, { desc = "Fuzzy Search" })
 
 vim.keymap.set("n", "<leader>tr", "<cmd>Telescope buffers<CR>", { desc = "List Buffers" })
-vim.keymap.set("n", "<leader>nei", ':lua require("telescope.builtin).lsp_references()<CR>', { desc = "Find usages" })
+vim.keymap.set("n", "<leader>nei", ':lua require("telescope.builtin").lsp_references()<CR>', { desc = "Find usages" })
 
 --Harpoon
 local harpoon = require("harpoon")
