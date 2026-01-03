@@ -43,6 +43,14 @@ require("lazy").setup({
         "neovim/nvim-lspconfig",
       },
     },
+    {
+      "mason-org/mason-lspconfig.nvim",
+      opts = {},
+      dependencies = {
+        { "mason-org/mason.nvim", opts = {} },
+        "neovim/nvim-lspconfig",
+      },
+    },
 
     { "echasnovski/mini.files", version = false, setup = true },
 
@@ -57,7 +65,7 @@ require("lazy").setup({
       priority = 1000,
       opts = {},
       config = function()
-        vim.cmd("colorscheme tokyonight")
+        vim.cmd("colorscheme tokyonight-day")
       end,
     },
     {
@@ -79,6 +87,24 @@ require("lazy").setup({
       opts = {
         -- your configuration comes here; leave empty for default settings
       }
+    },
+    {
+      "folke/which-key.nvim",
+      event = "VeryLazy",
+      opts = {
+        -- your configuration comes here
+        -- or leave it empty to use the default settings
+        -- refer to the configuration section below
+      },
+      keys = {
+        {
+          "<leader>?",
+          function()
+            require("which-key").show({ global = false })
+          end,
+          desc = "Buffer Local Keymaps (which-key)",
+        },
+      },
     },
   },
   -- automatically check for plugin updates
