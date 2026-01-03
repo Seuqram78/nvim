@@ -1,3 +1,6 @@
+-- Keybinds optimized for Colemak DH layout
+-- Harpoon bindings (hz/hx/hc/hd) use home row keys for ergonomic access
+
 -- Telescope
 local builtin = require("telescope.builtin")
 local input = vim.fn.input
@@ -81,3 +84,7 @@ end, { desc = "DAP UI Close" })
 
 -- Toggleterm
 vim.keymap.set("n", "<leader>hh", "<cmd>ToggleTerm direction=float<CR>", { desc = "Open/close floating terminal" })
+
+
+vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, { desc = "LSP: Rename symbol" })
+vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, { desc = "LSP: Code action" })

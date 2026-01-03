@@ -9,9 +9,6 @@ require("nvim-treesitter.configs").setup({
   -- Recommendation: set to false if you don't have `tree-sitter` CLI installed locally
   auto_install = true,
 
-  -- List of parsers to ignore installing (or "all")
-  ignore_install = { "javascript" },
-
   highlight = {
     enable = true,
 
@@ -36,6 +33,11 @@ require("mason").setup({
     "github:mason-org/mason-registry",
     "github:Crashdummyy/mason-registry"
   }
+})
+
+require("mason-lspconfig").setup({
+  ensure_installed = { "emmylua_ls", "pyright", "rust_analyzer", "ts_ls", 'ruff' },
+  automatic_installation = true,
 })
 
 -- Harpoon
@@ -133,53 +135,6 @@ dap.configurations.python = {
     program = "${file}", -- This means: run current file
     pythonPath = function()
       return "python"    -- Or set your venv path here
-    end,
-  },
-}
-
-dap.adapters.coreclr = {
-  type = "executable",
-  command = "/opt/netcoredbg/netcoredbg",
-  args = { "--interpreter=vscode" },
-}
-
-dap.configurations.cs = {
-  {
-    type = "coreclr",
-    name = "launch - netcoredbg",
-    request = "launch",
-    program = function()
-      return vim.fn.input("Path to dll")
-    end,
-  },
-}
-
-dap.configurations.cs = {
-  {
-    type = "coreclr",
-    name = "launch - netcoredbg",
-    request = "launch",
-    program = function()
-      -- Build the project (assumes .csproj is in current working directory)
-      local cwd = vim.fn.getcwd()
-      vim.fn.system("dotnet build " .. cwd)
-      -- Find the DLL (assumes project name matches directory name)
-      local project_name = vim.fn.fnamemodify(cwd, ":t")
-      local glob = cwd .. "/bin/Debug/net*/" .. project_name .. ".dll"
-      local dlls = vim.fn.glob(glob, 0, 1)
-      if #dlls > 0 then
-        return dlls[1]
-      else
-        -- glob = cwd .. 'App/bin/Debug/net*/' .. project_name .. '.dll'
-        glob = cwd .. "/App/bin/Debug/net*/App.dll"
-        dlls = vim.fn.glob(glob, 0, 1)
-        if #dlls > 0 then
-          return dlls[1]
-        else
-          -- Prompt if not found
-          return vim.fn.input("Path to dll: ", cwd .. "/bin/Debug/net9.0/", "file")
-        end
-      end
     end,
   },
 }
