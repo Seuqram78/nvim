@@ -102,7 +102,7 @@ require("conform").setup({
 
 -- DAP
 require("dapui").setup({
-	layout = {
+	layouts = {
 		{
 			elements = {
 				{ id = "scopes", size = 0.33 },
