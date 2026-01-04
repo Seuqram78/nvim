@@ -36,8 +36,24 @@ require("mason").setup({
 })
 
 require("mason-lspconfig").setup({
-	ensure_installed = { "stylua", "emmylua_ls", "pyright", "rust_analyzer", "ts_ls", "ruff", "roslyn" },
+	ensure_installed = { "emmylua_ls", "pyright", "rust_analyzer", "ts_ls" },
 	automatic_installation = true,
+})
+
+require("mason-tool-installer").setup({
+	ensure_installed = {
+		-- format/lint tools used by conform
+		"stylua",
+		"ruff",
+		"prettier",
+		"kdlfmt",
+		"roslyn",
+		-- debug adapters used by dap
+		"debugpy",
+		"netcoredbg",
+	},
+	run_on_start = true,
+	auto_update = false,
 })
 
 -- Harpoon
