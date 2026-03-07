@@ -1,10 +1,18 @@
 require("lazy").setup({
 	spec = {
 		{ "windwp/nvim-autopairs", config = true },
-		{ "nvim-treesitter/nvim-treesitter", branch = "master", lazy = false, build = ":TSUpdate" },
+		{
+			"romus204/tree-sitter-manager.nvim",
+			config = function()
+				require("tree-sitter-manager").setup({
+					auto_install = true,
+				})
+			end,
+		},
+
 		{
 			"nvim-telescope/telescope.nvim",
-			tag = "0.1.8",
+			tag = "v0.2.2",
 			dependencies = { "nvim-lua/plenary.nvim" },
 		},
 		{ "stevearc/conform.nvim", opts = {} },
@@ -18,7 +26,6 @@ require("lazy").setup({
 		},
 		{ "theHamsta/nvim-dap-virtual-text" },
 		{ "akinsho/toggleterm.nvim", version = "*", config = true },
-
 		-- Completion engine
 		{ "hrsh7th/nvim-cmp" },
 		-- LSP source for nvim-cmp
@@ -42,15 +49,6 @@ require("lazy").setup({
 				"neovim/nvim-lspconfig",
 			},
 		},
-		{
-			"mason-org/mason-lspconfig.nvim",
-			opts = {},
-			dependencies = {
-				{ "mason-org/mason.nvim", opts = {} },
-				"neovim/nvim-lspconfig",
-			},
-		},
-
 		{ "echasnovski/mini.files", version = false, setup = true },
 
 		{
@@ -59,12 +57,11 @@ require("lazy").setup({
 		},
 		{ "mbbill/undotree" },
 		{
-			"folke/tokyonight.nvim",
+			"rebelot/kanagawa.nvim",
 			lazy = false,
 			priority = 1000,
-			opts = {},
 			config = function()
-				vim.cmd("colorscheme tokyonight-day")
+				vim.cmd("colorscheme kanagawa")
 			end,
 		},
 		{
@@ -73,7 +70,15 @@ require("lazy").setup({
 				{ "<leader>lz", "<cmd>LazyGit<cr>", desc = "LazyGit" },
 			},
 		},
-		{ "f-person/git-blame.nvim" },
+		{
+			"FabijanZulj/blame.nvim",
+			lazy = false,
+			config = function()
+				require("blame").setup({
+					merge_consecutive = true,
+				})
+			end,
+		},
 		{ "lewis6991/gitsigns.nvim" },
 		{
 			"ThePrimeagen/harpoon",
@@ -107,6 +112,14 @@ require("lazy").setup({
 			},
 		},
 		{ "WhoIsSethDaniel/mason-tool-installer.nvim" },
+		{
+			"MeanderingProgrammer/render-markdown.nvim",
+			dependencies = { "nvim-tree/nvim-web-devicons" },
+			---@module 'render-markdown'
+			---@type render.md.UserConfig
+			opts = {},
+		},
+		{ "smjonas/inc-rename.nvim", opts = {} },
 		{
 			"folke/trouble.nvim",
 			opts = {}, -- for default options, refer to the configuration section for custom setup.

@@ -1,24 +1,4 @@
-require("nvim-treesitter.configs").setup({
-	-- A list of parser names, or "all" (the listed parsers MUST always be installed)
-	ensure_installed = { "c", "lua", "vim", "vimdoc", "query", "markdown", "markdown_inline" },
 
-	-- Install parsers synchronously (only applied to `ensure_installed`)
-	sync_install = false,
-
-	-- Automatically install missing parsers when entering buffer
-	-- Recommendation: set to false if you don't have `tree-sitter` CLI installed locally
-	auto_install = true,
-
-	highlight = {
-		enable = true,
-
-		-- Setting this to true will run `:h syntax` and tree-sitter at the same time.
-		-- Set this to `true` if you depend on 'syntax' being enabled (like for indentation).
-		-- Using this option may slow down your editor, and you may see some duplicate highlights.
-		-- Instead of true it can also be a list of languages
-		additional_vim_regex_highlighting = false,
-	},
-})
 
 require("mini.files").setup()
 
@@ -36,7 +16,20 @@ require("mason").setup({
 })
 
 require("mason-lspconfig").setup({
-	ensure_installed = { "emmylua_ls", "pyright", "rust_analyzer", "ts_ls" },
+	ensure_installed = {
+		"angularls",
+		"bashls",
+		"docker_language_server",
+		"emmylua_ls",
+		"helm_ls",
+		"jsonls",
+		"markdown_oxide",
+		"omnisharp",
+		"basedpyright",
+		"tombi",
+		"ts_ls",
+		"yamlls",
+	},
 	automatic_installation = true,
 })
 
@@ -47,10 +40,14 @@ require("mason-tool-installer").setup({
 		"ruff",
 		"prettier",
 		"kdlfmt",
+		"hadolint",
+		-- language servers (not managed by mason-lspconfig)
 		"roslyn",
 		-- debug adapters used by dap
 		"debugpy",
 		"netcoredbg",
+		-- other tools
+		"uv",
 	},
 	run_on_start = true,
 	auto_update = false,
@@ -61,11 +58,11 @@ require("harpoon"):setup()
 
 -- Telescope
 local ok, telescope = pcall(require, "telescope")
-local actions = require("telescope.actions")
 if ok then
+	local actions = require("telescope.actions")
 	telescope.setup({
 		defaults = {
-			file_ignore_patterns = { "node_modules", ".git/" },
+			file_ignore_patterns = { "node_modules", ".git/", ".venv/" },
 			mappings = {
 				i = {
 					["<ESC>"] = actions.close,
@@ -94,13 +91,12 @@ require("conform").setup({
 			-- To organize the imports.
 			"ruff_organize_imports",
 		},
-		-- You can customize some of the format options for the filetype (:help conform.format)
-		rust = { "rustfmt", lsp_format = "fallback" },
 		typescript = { "prettier" },
 		javascript = { "prettier" },
 		html = { "prettier" },
 		cs = { "lsp" },
 		kdl = { "kdlfmt" },
+		json = { "jq" },
 	},
 	formatters = {
 		prettier = {
@@ -109,13 +105,23 @@ require("conform").setup({
 			stdin = true,
 		},
 	},
-	format_on_save = {
-		-- These options will be passed to conform.format()
-		timeout_ms = 3000,
-		lsp_format = "fallback",
-	},
+	format_on_save = function(bufnr)
+		local ignore = { "cs", "html", "ts", "typescript", "htmlangular" }
+		if vim.tbl_contains(ignore, vim.bo[bufnr].filetype) then
+			return
+		end
+		if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat then
+			return
+		end
+		return { timeout_ms = 500, lsp_format = "fallback" }
+	end,
 })
 
+-- vim.keymap.set("n", "<leader>zz", function()
+-- 	vim.g.disable_autoformat = not vim.g.disable_autoformat
+-- 	vim.notify("Format on save (global): " .. (vim.g.disable_autoformat and "OFF" or "ON"))
+-- end, { desc = "Toggle format-on-save (global)" })
+--
 -- DAP
 require("dapui").setup({
 	layouts = {
@@ -129,32 +135,69 @@ require("dapui").setup({
 			position = "left",
 		},
 		{
-			elements = { { id = "console", size = 1.0 } },
+			elements = {
+				{ id = "repl", size = 0.5 },
+				{ id = "console", size = 0.5 },
+			},
 			size = 15,
 			position = "bottom",
 		},
+		-- {
+		-- 	elements = { { id = "console", size = 0.5 } },
+		-- 	size = 15,
+		-- 	position = "bottom",
+		-- },
 	},
 })
 local dap = require("dap")
 
 dap.adapters.python = {
 	type = "executable",
+	host = "127.0.0.1",
+	port = "${port}",
 	-- command = "python",
 	command = vim.fn.stdpath("data") .. "/mason/packages/debugpy/venv/bin/python",
 	args = { "-m", "debugpy.adapter" },
 }
 
-dap.configurations.python = {
-	{
-		type = "python",
-		request = "launch",
-		name = "Launch file",
-		program = "${file}", -- This means: run current file
-		pythonPath = function()
-			return "python" -- Or set your venv path here
-		end,
-	},
-}
+dap.adapters.python_attach = function(callback, config)
+	callback({
+		type = "server",
+		host = (config.connect and config.connect.host) or "127.0.0.1",
+		port = (config.connect and config.connect.port) or 5678,
+	})
+end
+
+dap.configurations.python = dap.configurations.python or {}
+
+table.insert(dap.configurations.python, {
+	type = "python",
+	request = "launch",
+	name = "Launch file",
+	program = "${file}", -- This means: run current file
+	pythonPath = function()
+		return "python" -- Or set your venv path here
+	end,
+})
+table.insert(dap.configurations.python, {
+	name = "Attach (WSL direct server)",
+	type = "python_attach",
+	request = "attach",
+	connect = { host = "127.0.0.1", port = 5678 },
+	justMyCode = false,
+})
+table.insert(dap.configurations.python, {
+	name = "Pytest: current file",
+	type = "python",
+	request = "launch",
+	pythonPath = function()
+		return vim.fn.exepath("python")
+	end,
+	module = "pytest",
+	-- args = { "${file}" },
+	console = "integratedTerminal",
+	justMyCode = false,
+})
 
 dap.adapters.coreclr = {
 	type = "executable",
@@ -199,7 +242,7 @@ table.insert(dap.configurations.cs, {
 })
 require("nvim-dap-virtual-text").setup({
 	-- optional settings
-	commented = true, -- show virtual text as comments
+	-- commented = true, -- show virtual text as comments
 })
 
 -- CMP
@@ -219,6 +262,20 @@ cmp.setup({
 	sources = {
 		{ name = "nvim_lsp" },
 		{ name = "luasnip" },
+	},
+})
+
+vim.lsp.inlay_hint.enable(true)
+
+vim.lsp.config("basedpyright", {
+	settings = {
+		basedpyright = {
+			analysis = {
+				inlayHints = {
+					callArgumentNames = "all",
+				},
+			},
+		},
 	},
 })
 
