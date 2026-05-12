@@ -53,9 +53,6 @@ require("mason-tool-installer").setup({
 	auto_update = false,
 })
 
--- Harpoon
-require("harpoon"):setup()
-
 -- Telescope
 local ok, telescope = pcall(require, "telescope")
 if ok then
