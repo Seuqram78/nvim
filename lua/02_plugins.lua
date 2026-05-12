@@ -124,7 +124,13 @@ require("lazy").setup({
 		},
 		{ "smjonas/inc-rename.nvim", opts = {} },
 		{ "mfussenegger/nvim-treehopper" },
-		{ "folke/todo-comments.nvim", opts = {} },
+		{
+			"folke/todo-comments.nvim",
+			opts = {
+				highlight = { after = "", pattern = [[.*<(KEYWORDS)\s*]] },
+				search = { pattern = [[\b(KEYWORDS)\b]] },
+			},
+		},
 		{ "nvim-treesitter/nvim-treesitter-context", opts = {} },
 		{
 			"folke/trouble.nvim",
