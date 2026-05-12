@@ -115,3 +115,7 @@ vim.keymap.set("n", "<leader>hh", "<cmd>ToggleTerm direction=float<CR>", { desc 
 
 vim.keymap.set("n", "<leader>rn", ":IncRename ", { desc = "IncRename" })
 vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, { desc = "LSP: Code action" })
+
+-- Treehopper (select AST nodes with hints)
+vim.keymap.set("o", "m", ":<C-U>lua require('tsht').nodes()<CR>", { silent = true, desc = "Treehopper select" })
+vim.keymap.set("x", "m", ":lua require('tsht').nodes()<CR>", { silent = true, desc = "Treehopper select" })
