@@ -124,6 +124,8 @@ require("lazy").setup({
 		},
 		{ "smjonas/inc-rename.nvim", opts = {} },
 		{ "mfussenegger/nvim-treehopper" },
+		{ "folke/todo-comments.nvim", opts = {} },
+		{ "nvim-treesitter/nvim-treesitter-context", opts = {} },
 		{
 			"folke/trouble.nvim",
 			opts = {}, -- for default options, refer to the configuration section for custom setup.
