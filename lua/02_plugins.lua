@@ -26,19 +26,21 @@ require("lazy").setup({
 		},
 		{ "theHamsta/nvim-dap-virtual-text" },
 		{ "akinsho/toggleterm.nvim", version = "*", config = true },
-		-- Completion engine
-		{ "hrsh7th/nvim-cmp" },
-		-- LSP source for nvim-cmp
-		{ "hrsh7th/cmp-nvim-lsp" },
-		-- Buffer words source (optional, but useful)
-		{ "hrsh7th/cmp-buffer" },
-		-- File system paths (optional, but lightweight)
-		{ "hrsh7th/cmp-path" },
-
-		-- Snippet engine (even if unused, some sources expect it)
-		{ "L3MON4D3/LuaSnip" },
-
-		{ "saadparwaiz1/cmp_luasnip" },
+		{
+			"saghen/blink.cmp",
+			version = "1.*",
+			---@module 'blink.cmp'
+			---@type blink.cmp.Config
+			opts = {
+				keymap = { preset = "enter" },
+				completion = { documentation = { auto_show = true } },
+				signature = { enabled = true },
+				sources = {
+					default = { "lsp", "path", "snippets", "buffer" },
+				},
+				fuzzy = { implementation = "prefer_rust_with_warning" },
+			},
+		},
 
 		{ "neovim/nvim-lspconfig" },
 		{
