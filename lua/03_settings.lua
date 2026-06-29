@@ -1,5 +1,3 @@
-
-
 require("mini.files").setup()
 
 require("lualine").setup({
@@ -103,7 +101,8 @@ require("conform").setup({
 		},
 	},
 	format_on_save = function(bufnr)
-		local ignore = { "cs", "html", "ts", "typescript", "htmlangular" }
+		-- local ignore = { "cs", "html", "ts", "typescript", "htmlangular" }
+		local ignore = {}
 		if vim.tbl_contains(ignore, vim.bo[bufnr].filetype) then
 			return
 		end
@@ -251,6 +250,9 @@ vim.lsp.config("basedpyright", {
 				inlayHints = {
 					callArgumentNames = "all",
 				},
+				autoImportCompletions = true,
+				autoSearchPaths = true,
+				diagnosticMode = "workspace",
 			},
 		},
 	},
