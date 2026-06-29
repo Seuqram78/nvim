@@ -131,6 +131,18 @@ require("lazy").setup({
 				search = { pattern = [[\b(KEYWORDS)\b]] },
 			},
 		},
+		{
+			"hat0uma/csvview.nvim",
+			ft = { "csv", "tsv" },
+			opts = { view = { display_mode = "border" } },
+			config = function(_, opts)
+				require("csvview").setup(opts)
+				vim.api.nvim_create_autocmd("FileType", {
+					pattern = { "csv", "tsv" },
+					callback = function() require("csvview").enable() end,
+				})
+			end,
+		},
 		{ "nvim-treesitter/nvim-treesitter-context", opts = {} },
 		{
 			"folke/trouble.nvim",
