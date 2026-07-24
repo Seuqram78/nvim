@@ -15,6 +15,8 @@ require("lazy").setup({
 			tag = "v0.2.2",
 			dependencies = { "nvim-lua/plenary.nvim" },
 		},
+		{ "jonarrien/telescope-cmdline.nvim" },
+		{ "shortcuts/no-neck-pain.nvim", version = "*", opts = { buffers = { right = { enabled = false } } } },
 		{ "stevearc/conform.nvim", opts = {} },
 		{ "mfussenegger/nvim-dap" },
 		{
@@ -52,6 +54,10 @@ require("lazy").setup({
 			},
 		},
 		{ "echasnovski/mini.files", version = false, setup = true },
+		{ "echasnovski/mini.indentscope", version = false },
+		{ "echasnovski/mini.cursorword", version = false },
+		{ "echasnovski/mini.diff", version = false },
+		{ "echasnovski/mini.map", version = false },
 
 		{
 			"nvim-lualine/lualine.nvim",
@@ -81,7 +87,15 @@ require("lazy").setup({
 				})
 			end,
 		},
-		{ "lewis6991/gitsigns.nvim" },
+		{
+			"j-hui/fidget.nvim",
+			opts = {
+				notification = {
+					override_vim_notify = true,
+				},
+			},
+		},
+
 		{
 			"MeanderingProgrammer/harpoon-core.nvim",
 			config = function()
