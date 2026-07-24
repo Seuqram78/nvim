@@ -1,8 +1,72 @@
 require("mini.files").setup()
+require("mini.indentscope").setup()
+require("mini.cursorword").setup()
+require("mini.diff").setup()
+local map = require("mini.map")
+local map_integrations = {
+	map.gen_integration.builtin_search(),
+	map.gen_integration.diagnostic({
+		error = "DiagnosticFloatingError",
+		warn = "DiagnosticFloatingWarn",
+		info = "DiagnosticFloatingInfo",
+		hint = "DiagnosticFloatingHint",
+	}),
+}
+map.setup({
+	symbols = {
+		encode = map.gen_encode_symbols.dot("4x2"),
+	},
+	integrations = map_integrations,
+})
+vim.api.nvim_create_autocmd("VimEnter", {
+	callback = function()
+		MiniMap.open()
+	end,
+})
+
+-- Harpoon tabline: build one lualine component per slot
+local harpoon_slots = require("harpoon_slots")
+local harpoon_tabline_components = {}
+for i, key in ipairs(harpoon_slots) do
+	harpoon_tabline_components[i] = {
+		function()
+			local Marks = require("harpoon-core.mark")
+			local marks = Marks.get()
+			local filename = marks[i] and marks[i].filename or "[empty]"
+			return key .. ": " .. filename
+		end,
+		color = function()
+			local Marks = require("harpoon-core.mark")
+			local active_idx = Marks.index()
+			if active_idx == i then
+				return "TabLineSel"
+			end
+			-- Dim empty slots more than occupied ones
+			local marks = Marks.get()
+			if not marks[i] then
+				return { fg = "#5c5c5c", bg = "NONE" }
+			end
+			return "TabLine"
+		end,
+		separator = { left = "", right = "" },
+		padding = { left = 2, right = 2 },
+	}
+end
 
 require("lualine").setup({
+	options = {
+		always_show_tabline = true,
+	},
 	sections = {
-		lualine_c = { "filename", "lsp_status" },
+		lualine_c = { { "filename", path = 1 } },
+	},
+	tabline = {
+		lualine_a = harpoon_tabline_components,
+		lualine_b = {},
+		lualine_c = {},
+		lualine_x = {},
+		lualine_y = {},
+		lualine_z = {},
 	},
 })
 
@@ -72,6 +136,7 @@ if ok then
 			},
 		},
 	})
+	telescope.load_extension("cmdline")
 end
 
 -- Conform
@@ -121,6 +186,23 @@ require("conform").setup({
 -- DAP
 require("dapui").setup({
 	layouts = {
+		-- Layout 1: scopes + stacks left, repl bottom
+		{
+			elements = {
+				{ id = "scopes", size = 0.5 },
+				{ id = "stacks", size = 0.5 },
+			},
+			size = 40,
+			position = "left",
+		},
+		{
+			elements = {
+				{ id = "repl", size = 1.0 },
+			},
+			size = 15,
+			position = "bottom",
+		},
+		-- Layout 2: scopes + breakpoints + stacks left, repl + console bottom
 		{
 			elements = {
 				{ id = "scopes", size = 0.33 },
@@ -138,14 +220,19 @@ require("dapui").setup({
 			size = 15,
 			position = "bottom",
 		},
-		-- {
-		-- 	elements = { { id = "console", size = 0.5 } },
-		-- 	size = 15,
-		-- 	position = "bottom",
-		-- },
 	},
 })
 local dap = require("dap")
+
+dap.listeners.after.event_initialized["dapui_buflist"] = function()
+	for _, win in ipairs(vim.api.nvim_list_wins()) do
+		local buf = vim.api.nvim_win_get_buf(win)
+		local ft = vim.bo[buf].filetype
+		if ft:match("^dapui_") or ft == "dap-repl" then
+			vim.bo[buf].buflisted = true
+		end
+	end
+end
 
 dap.adapters.python = {
 	type = "executable",

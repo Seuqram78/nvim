@@ -6,6 +6,8 @@ local builtin = require("telescope.builtin")
 local input = vim.fn.input
 
 vim.keymap.set("n", "<leader>tf", "<cmd>Telescope find_files<CR>", { desc = "Fuzzy Find Files" })
+vim.keymap.set("n", ":", "<cmd>Telescope cmdline<CR>", { desc = "Cmdline" })
+vim.keymap.set("n", "<leader>nn", "<cmd>NoNeckPain<CR>", { desc = "Toggle No Neck Pain" })
 
 vim.keymap.set("n", "<leader>ts", function()
 	-- Prompt user for extensions
@@ -28,30 +30,31 @@ vim.keymap.set("n", "<leader>ts", function()
 end, { desc = "Fuzzy Search" })
 
 vim.keymap.set("n", "<leader>tr", "<cmd>Telescope buffers<CR>", { desc = "List Buffers" })
+vim.keymap.set("n", "<leader>tp", function()
+	builtin.treesitter({
+		symbols = "function",
+		sorting_strategy = "ascending",
+	})
+end, { desc = "List functions (treesitter)" })
 vim.keymap.set("n", "<leader>nei", function()
 	require("telescope.builtin").lsp_references()
 end, { desc = "Find usages" })
 
 --Harpoon
 local harpoon = require("harpoon-core")
+local harpoon_slots = require("harpoon_slots")
 vim.keymap.set("n", "<leader>hv", function()
 	harpoon.add_file()
+	require("lualine").refresh()
 end, { desc = "Harpoon add" })
 vim.keymap.set("n", "<leader>hk", function()
 	harpoon.toggle_quick_menu()
 end, { desc = "Harpoon toggle" })
-vim.keymap.set("n", "<leader>hz", function()
-	harpoon.nav_file(1)
-end, { desc = "Harpoon 1" })
-vim.keymap.set("n", "<leader>hx", function()
-	harpoon.nav_file(2)
-end, { desc = "Harpoon 2" })
-vim.keymap.set("n", "<leader>hc", function()
-	harpoon.nav_file(3)
-end, { desc = "Harpoon 3" })
-vim.keymap.set("n", "<leader>hd", function()
-	harpoon.nav_file(4)
-end, { desc = "Harpoon 4" })
+for i, key in ipairs(harpoon_slots) do
+	vim.keymap.set("n", "<leader>h" .. key, function()
+		harpoon.nav_file(i)
+	end, { desc = "Harpoon " .. i })
+end
 vim.keymap.set("n", "<leader>h,", function()
 	harpoon.nav_prev()
 end, { desc = "Harpoon prev" })
@@ -67,6 +70,16 @@ vim.keymap.set("n", "<leader>pv", function()
 		MiniFiles.reveal_cwd()
 	end, 30)
 end)
+
+-- mini diff
+vim.keymap.set("n", "<leader>gh", function()
+	vim.b.minimap_show_diff = not vim.b.minimap_show_diff
+	require("mini.diff").toggle_overlay(0)
+	MiniMap.refresh({ integrations = {
+		vim.b.minimap_show_diff and require("mini.map").gen_integration.diff()
+			or require("mini.map").gen_integration.diagnostic(),
+	} })
+end, { desc = "Toggle git diff overlay" })
 
 -- DAP
 local dap = require("dap")
@@ -104,8 +117,22 @@ end, { desc = "DAP: Open evaluate window" })
 local dapui = require("dapui")
 
 vim.keymap.set("n", "<leader>dd", function()
-	dapui.open()
-end, { desc = "DAP UI Open" })
+	vim.ui.select({ "1: Scopes + Stacks / REPL", "2: Scopes + Breakpoints + Stacks / REPL + Console" }, {
+		prompt = "Select DAP UI layout:",
+	}, function(_, idx)
+		if not idx then
+			return
+		end
+		dapui.close()
+		if idx == 1 then
+			dapui.open({ layout = 1 })
+			dapui.open({ layout = 2 })
+		else
+			dapui.open({ layout = 3 })
+			dapui.open({ layout = 4 })
+		end
+	end)
+end, { desc = "DAP UI Open (pick layout)" })
 vim.keymap.set("n", "<leader>dc", function()
 	dapui.close()
 end, { desc = "DAP UI Close" })
@@ -119,3 +146,13 @@ vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, { desc = "LSP: Code a
 -- Treehopper (select AST nodes with hints)
 vim.keymap.set("o", "m", ":<C-U>lua require('tsht').nodes()<CR>", { silent = true, desc = "Treehopper select" })
 vim.keymap.set("x", "m", ":lua require('tsht').nodes()<CR>", { silent = true, desc = "Treehopper select" })
+
+vim.keymap.set("n", "<leader>li", function()
+	local clients = vim.lsp.get_clients({ bufnr = 0 })
+	if #clients == 0 then
+		vim.notify("No LSP attached", vim.log.levels.WARN)
+	else
+		local names = vim.tbl_map(function(c) return c.name end, clients)
+		vim.notify("LSP: " .. table.concat(names, ", "), vim.log.levels.INFO)
+	end
+end, { desc = "Show active LSP clients" })
