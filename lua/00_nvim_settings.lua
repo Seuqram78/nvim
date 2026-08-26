@@ -14,6 +14,9 @@ vim.o.smartindent = true
 
 -- -- --UI
 vim.o.termguicolors = true
+-- Keep the insert-mode caret visible in terminals and GUI clients.
+-- Cursor/lCursor colours are supplied by the active colourscheme.
+vim.opt.guicursor = "n-v-c:block-Cursor/lCursor,i-ci:ver35-Cursor/lCursor,r-cr:hor20-Cursor/lCursor,o:hor50-Cursor/lCursor"
 vim.o.signcolumn = "yes"
 vim.o.cmdheight = 0
 vim.o.cursorline = true

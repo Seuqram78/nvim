@@ -29,7 +29,21 @@ vim.keymap.set("n", "<leader>ts", function()
 	end
 end, { desc = "Fuzzy Search" })
 
-vim.keymap.set("n", "<leader>tr", "<cmd>Telescope buffers<CR>", { desc = "List Buffers" })
+vim.keymap.set("n", "<leader>tr", function()
+  builtin.buffers({
+    sort_mru = false,
+    sort_lastused = false,
+    sort_buffers = function(a, b)
+      local function buffer_name(bufnr)
+        local name = vim.api.nvim_buf_get_name(bufnr)
+        return (name == "" and "[No Name]" or name):lower()
+      end
+
+      local name_a, name_b = buffer_name(a), buffer_name(b)
+      return name_a == name_b and a < b or name_a < name_b
+    end,
+  })
+end, { desc = "List Buffers Alphabetically" })
 vim.keymap.set("n", "<leader>tp", function()
 	builtin.treesitter({
 		symbols = "function",
