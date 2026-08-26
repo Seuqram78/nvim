@@ -161,12 +161,142 @@ vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, { desc = "LSP: Code a
 vim.keymap.set("o", "m", ":<C-U>lua require('tsht').nodes()<CR>", { silent = true, desc = "Treehopper select" })
 vim.keymap.set("x", "m", ":lua require('tsht').nodes()<CR>", { silent = true, desc = "Treehopper select" })
 
-vim.keymap.set("n", "<leader>li", function()
-	local clients = vim.lsp.get_clients({ bufnr = 0 })
-	if #clients == 0 then
-		vim.notify("No LSP attached", vim.log.levels.WARN)
-	else
-		local names = vim.tbl_map(function(c) return c.name end, clients)
-		vim.notify("LSP: " .. table.concat(names, ", "), vim.log.levels.INFO)
+-- LSP status picker: attached clients for the current buffer + Mason-installed
+-- servers applicable to it but not (yet) attached.
+vim.api.nvim_set_hl(0, "TelescopeLspAttached", { link = "DiagnosticOk", default = true })
+vim.api.nvim_set_hl(0, "TelescopeLspAvailable", { link = "Comment", default = true })
+
+vim.keymap.set("n", "<leader>lsp", function()
+	local pickers = require("telescope.pickers")
+	local finders = require("telescope.finders")
+	local conf = require("telescope.config").values
+	local previewers = require("telescope.previewers")
+	local entry_display = require("telescope.pickers.entry_display")
+
+	local bufnr = vim.api.nvim_get_current_buf()
+	local filetype = vim.bo[bufnr].filetype
+
+	local attached = vim.lsp.get_clients({ bufnr = bufnr })
+	local attached_names = {}
+	for _, client in ipairs(attached) do
+		attached_names[client.name] = true
 	end
-end, { desc = "Show active LSP clients" })
+
+	local entries = {}
+	for _, client in ipairs(attached) do
+		table.insert(entries, {
+			name = client.name,
+			status = "attached",
+			client = client,
+		})
+	end
+
+	-- Every installed Mason package, mapped to its lspconfig server name where
+	-- one exists (e.g. "json-lsp" -> "jsonls") so it lines up with attached
+	-- client names; otherwise shown under its raw package name. This lists
+	-- everything Mason shows, LSP or not (formatters, DAPs, linters, ...).
+	local pkg_to_lspconfig = {}
+	local ok_mlsp, mlsp = pcall(require, "mason-lspconfig")
+	if ok_mlsp then
+		local ok_map, mappings = pcall(mlsp.get_mappings)
+		if ok_map then
+			pkg_to_lspconfig = mappings.package_to_lspconfig
+		end
+	end
+
+	local candidate_names = {}
+	local ok_registry, registry = pcall(require, "mason-registry")
+	if ok_registry then
+		for _, pkg in ipairs(registry.get_installed_package_names()) do
+			candidate_names[pkg_to_lspconfig[pkg] or pkg] = true
+		end
+	end
+
+	for name in pairs(candidate_names) do
+		if not attached_names[name] then
+			local ok_cfg, cfg = pcall(function()
+				return vim.lsp.config[name]
+			end)
+			table.insert(entries, {
+				name = name,
+				status = "available",
+				config = (ok_cfg and cfg) or nil,
+				is_lsp = ok_cfg and cfg ~= nil,
+			})
+		end
+	end
+
+	local displayer = entry_display.create({
+		separator = " ",
+		items = {
+			{ width = 2 },
+			{ remaining = true },
+		},
+	})
+
+	local make_display = function(entry)
+		local icon, hl
+		if entry.value.status == "attached" then
+			icon, hl = "●", "TelescopeLspAttached"
+		else
+			icon, hl = "○", "TelescopeLspAvailable"
+		end
+		return displayer({
+			{ icon, hl },
+			{ entry.value.name, hl },
+		})
+	end
+
+	pickers
+		.new({}, {
+			prompt_title = "LSP Status (buffer: " .. (filetype ~= "" and filetype or "none") .. ")",
+			finder = finders.new_table({
+				results = entries,
+				entry_maker = function(entry)
+					return {
+						value = entry,
+						display = make_display,
+						ordinal = entry.name .. " " .. entry.status,
+					}
+				end,
+			}),
+			sorter = conf.generic_sorter({}),
+			previewer = previewers.new_buffer_previewer({
+				title = "LSP Details",
+				define_preview = function(self, entry)
+					local e = entry.value
+					local lines = { e.name, "" }
+					if e.status == "attached" then
+						local c = e.client
+						table.insert(lines, "status: attached")
+						table.insert(lines, "id: " .. c.id)
+						table.insert(lines, "root_dir: " .. (c.root_dir or "n/a"))
+						table.insert(lines, "cmd: " .. table.concat(
+							type(c.config.cmd) == "table" and c.config.cmd or { tostring(c.config.cmd) },
+							" "
+						))
+						table.insert(lines, "filetypes: " .. table.concat(c.config.filetypes or {}, ", "))
+						local attached_bufs = {}
+						for buf, _ in pairs(c.attached_buffers or {}) do
+							table.insert(attached_bufs, vim.api.nvim_buf_get_name(buf))
+						end
+						table.insert(lines, "attached buffers:")
+						vim.list_extend(lines, #attached_bufs > 0 and attached_bufs or { "  (none)" })
+					elseif e.is_lsp then
+						table.insert(lines, "status: installed, not attached")
+						local cfg = e.config or {}
+						table.insert(lines, "cmd: " .. table.concat(
+							type(cfg.cmd) == "table" and cfg.cmd or { tostring(cfg.cmd) },
+							" "
+						))
+						table.insert(lines, "filetypes: " .. table.concat(cfg.filetypes or {}, ", "))
+					else
+						table.insert(lines, "status: installed (Mason tool)")
+						table.insert(lines, "not a language server (formatter/linter/DAP/etc.)")
+					end
+					vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+				end,
+			}),
+		})
+		:find()
+end, { desc = "LSP status (Telescope)" })
