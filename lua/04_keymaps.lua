@@ -165,30 +165,49 @@ vim.keymap.set("x", "m", ":lua require('tsht').nodes()<CR>", { silent = true, de
 -- servers applicable to it but not (yet) attached.
 vim.api.nvim_set_hl(0, "TelescopeLspAttached", { link = "DiagnosticOk", default = true })
 vim.api.nvim_set_hl(0, "TelescopeLspAvailable", { link = "Comment", default = true })
+vim.api.nvim_set_hl(0, "TelescopeLspStarting", { link = "DiagnosticWarn", default = true })
 
-vim.keymap.set("n", "<leader>lsp", function()
-	local pickers = require("telescope.pickers")
-	local finders = require("telescope.finders")
-	local conf = require("telescope.config").values
-	local previewers = require("telescope.previewers")
-	local entry_display = require("telescope.pickers.entry_display")
+local lsp_pickers = require("telescope.pickers")
+local lsp_finders = require("telescope.finders")
+local lsp_telescope_conf = require("telescope.config").values
+local lsp_previewers = require("telescope.previewers")
+local lsp_entry_display = require("telescope.pickers.entry_display")
 
-	local bufnr = vim.api.nvim_get_current_buf()
-	local filetype = vim.bo[bufnr].filetype
+-- Capture warnings/errors LSP servers report via window/logMessage and
+-- window/showMessage, keyed by client name, so the picker below can flag
+-- servers that reported something wrong even when nothing was ever shown
+-- on screen (window/logMessage only ever reaches the log file by default,
+-- e.g. bashls quietly disabling shellcheck-based linting when the
+-- `shellcheck` binary isn't on PATH).
+local lsp_feedback = {}
+local MAX_FEEDBACK_PER_CLIENT = 5
 
-	local attached = vim.lsp.get_clients({ bufnr = bufnr })
+-- Live-refresh state: while the picker below is open, LspAttach/LspDetach
+-- (and new feedback) rebuild and push a fresh finder into it instead of
+-- requiring the user to close and reopen it to see updated status.
+local active_lsp_picker = nil
+local active_lsp_picker_bufnr = nil
+local active_lsp_picker_augroup = nil
+local active_lsp_picker_timer = nil
+
+local function build_lsp_entries(bufnr)
+	-- vim.lsp.get_clients() silently excludes any client still mid
+	-- `initialize` handshake (client.initialized == false) unless
+	-- `_uninitialized = true` is passed. That's exactly the "attaching"
+	-- window we want to show, so fetch everything and classify by hand.
+	local all_clients = vim.lsp.get_clients({ _uninitialized = true })
+
 	local attached_names = {}
-	for _, client in ipairs(attached) do
-		attached_names[client.name] = true
-	end
-
 	local entries = {}
-	for _, client in ipairs(attached) do
-		table.insert(entries, {
-			name = client.name,
-			status = "attached",
-			client = client,
-		})
+	for _, client in ipairs(all_clients) do
+		if client.initialized and client.attached_buffers[bufnr] then
+			attached_names[client.name] = true
+			table.insert(entries, {
+				name = client.name,
+				status = "attached",
+				client = client,
+			})
+		end
 	end
 
 	-- Every installed Mason package, mapped to its lspconfig server name where
@@ -212,6 +231,20 @@ vim.keymap.set("n", "<leader>lsp", function()
 		end
 	end
 
+	-- Clients that are running (process spawned, not stopped) and apply to
+	-- THIS buffer's filetype but aren't attached+initialized yet: still mid
+	-- `initialize` handshake. Shown as "starting" rather than lumped in with
+	-- servers that were never started, or ones running only for other buffers.
+	local filetype = vim.bo[bufnr].filetype
+	local starting_names = {}
+	for _, client in ipairs(all_clients) do
+		local applies = vim.tbl_contains(client.config.filetypes or {}, filetype)
+		local already_attached = client.initialized and client.attached_buffers[bufnr]
+		if applies and not already_attached and not client:is_stopped() then
+			starting_names[client.name] = true
+		end
+	end
+
 	for name in pairs(candidate_names) do
 		if not attached_names[name] then
 			local ok_cfg, cfg = pcall(function()
@@ -219,84 +252,201 @@ vim.keymap.set("n", "<leader>lsp", function()
 			end)
 			table.insert(entries, {
 				name = name,
-				status = "available",
+				status = starting_names[name] and "starting" or "available",
 				config = (ok_cfg and cfg) or nil,
 				is_lsp = ok_cfg and cfg ~= nil,
 			})
+			starting_names[name] = nil
+		end
+	end
+	-- Any starting client not covered by the candidate list above (e.g.
+	-- manually started, or under a name Mason doesn't know about).
+	for name in pairs(starting_names) do
+		table.insert(entries, { name = name, status = "starting" })
+	end
+
+	return entries
+end
+
+local lsp_displayer = lsp_entry_display.create({
+	separator = " ",
+	items = {
+		{ width = 2 },
+		{ width = 26 },
+		{ remaining = true },
+	},
+})
+
+local function make_lsp_display(entry)
+	local icon, hl
+	if entry.value.status == "attached" then
+		icon, hl = "●", "TelescopeLspAttached"
+	elseif entry.value.status == "starting" then
+		icon, hl = "◐", "TelescopeLspStarting"
+	else
+		icon, hl = "○", "TelescopeLspAvailable"
+	end
+
+	local feedback = lsp_feedback[entry.value.name]
+	local warning = { "", hl }
+	if feedback and #feedback > 0 then
+		local has_error = false
+		for _, f in ipairs(feedback) do
+			has_error = has_error or f.level == "ERROR"
+		end
+		warning = has_error and { "✗ error", "DiagnosticError" } or { "⚠ warning", "DiagnosticWarn" }
+	end
+
+	return lsp_displayer({
+		{ icon, hl },
+		{ entry.value.name, hl },
+		warning,
+	})
+end
+
+local function lsp_entry_maker(entry)
+	return {
+		value = entry,
+		display = make_lsp_display,
+		ordinal = entry.name .. " " .. entry.status,
+	}
+end
+
+local function lsp_define_preview(self, entry)
+	local e = entry.value
+	local lines = { e.name, "" }
+	if e.status == "attached" then
+		local c = e.client
+		table.insert(lines, "status: attached")
+		table.insert(lines, "id: " .. c.id)
+		table.insert(lines, "root_dir: " .. (c.root_dir or "n/a"))
+		table.insert(lines, "cmd: " .. table.concat(
+			type(c.config.cmd) == "table" and c.config.cmd or { tostring(c.config.cmd) },
+			" "
+		))
+		table.insert(lines, "filetypes: " .. table.concat(c.config.filetypes or {}, ", "))
+		local attached_bufs = {}
+		for buf, _ in pairs(c.attached_buffers or {}) do
+			table.insert(attached_bufs, vim.api.nvim_buf_get_name(buf))
+		end
+		table.insert(lines, "attached buffers:")
+		vim.list_extend(lines, #attached_bufs > 0 and attached_bufs or { "  (none)" })
+	elseif e.status == "starting" then
+		table.insert(lines, "status: starting (running, not yet attached to this buffer)")
+		local cfg = e.config or {}
+		if cfg.cmd then
+			table.insert(lines, "cmd: " .. table.concat(
+				type(cfg.cmd) == "table" and cfg.cmd or { tostring(cfg.cmd) },
+				" "
+			))
+		end
+	elseif e.is_lsp then
+		table.insert(lines, "status: installed, not attached")
+		local cfg = e.config or {}
+		table.insert(lines, "cmd: " .. table.concat(
+			type(cfg.cmd) == "table" and cfg.cmd or { tostring(cfg.cmd) },
+			" "
+		))
+		table.insert(lines, "filetypes: " .. table.concat(cfg.filetypes or {}, ", "))
+	else
+		table.insert(lines, "status: installed (Mason tool)")
+		table.insert(lines, "not a language server (formatter/linter/DAP/etc.)")
+	end
+
+	local feedback = lsp_feedback[e.name]
+	if feedback and #feedback > 0 then
+		table.insert(lines, "")
+		table.insert(lines, "recent messages:")
+		for _, f in ipairs(feedback) do
+			table.insert(lines, string.format("  [%s %s] %s", f.time, f.level, f.message))
 		end
 	end
 
-	local displayer = entry_display.create({
-		separator = " ",
-		items = {
-			{ width = 2 },
-			{ remaining = true },
-		},
+	vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+end
+
+local function refresh_active_lsp_picker()
+	if not active_lsp_picker or active_lsp_picker.closed then
+		if active_lsp_picker_augroup then
+			pcall(vim.api.nvim_del_augroup_by_id, active_lsp_picker_augroup)
+		end
+		if active_lsp_picker_timer then
+			active_lsp_picker_timer:stop()
+			active_lsp_picker_timer:close()
+		end
+		active_lsp_picker, active_lsp_picker_bufnr, active_lsp_picker_augroup, active_lsp_picker_timer =
+			nil, nil, nil, nil
+		return
+	end
+	active_lsp_picker:refresh(
+		lsp_finders.new_table({
+			results = build_lsp_entries(active_lsp_picker_bufnr),
+			entry_maker = lsp_entry_maker,
+		}),
+		{ reset_prompt = false }
+	)
+end
+
+local function record_lsp_feedback(client_id, level, message)
+	local client = vim.lsp.get_client_by_id(client_id)
+	local name = client and client.name or ("id=" .. tostring(client_id))
+	local list = lsp_feedback[name]
+	if not list then
+		list = {}
+		lsp_feedback[name] = list
+	end
+	table.insert(list, { level = level, message = message, time = os.date("%H:%M:%S") })
+	if #list > MAX_FEEDBACK_PER_CLIENT then
+		table.remove(list, 1)
+	end
+	vim.schedule(refresh_active_lsp_picker)
+end
+
+for _, method in ipairs({ "window/logMessage", "window/showMessage" }) do
+	local original = vim.lsp.handlers[method]
+	vim.lsp.handlers[method] = function(err, params, ctx, config)
+		if params.type == vim.lsp.protocol.MessageType.Error then
+			record_lsp_feedback(ctx.client_id, "ERROR", params.message)
+		elseif params.type == vim.lsp.protocol.MessageType.Warning then
+			record_lsp_feedback(ctx.client_id, "WARN", params.message)
+		end
+		return original(err, params, ctx, config)
+	end
+end
+
+vim.keymap.set("n", "<leader>lsp", function()
+	local bufnr = vim.api.nvim_get_current_buf()
+	local filetype = vim.bo[bufnr].filetype
+
+	local picker = lsp_pickers.new({}, {
+		prompt_title = "LSP Status (buffer: " .. (filetype ~= "" and filetype or "none") .. ")",
+		finder = lsp_finders.new_table({
+			results = build_lsp_entries(bufnr),
+			entry_maker = lsp_entry_maker,
+		}),
+		sorter = lsp_telescope_conf.generic_sorter({}),
+		previewer = lsp_previewers.new_buffer_previewer({
+			title = "LSP Details",
+			define_preview = lsp_define_preview,
+		}),
 	})
 
-	local make_display = function(entry)
-		local icon, hl
-		if entry.value.status == "attached" then
-			icon, hl = "●", "TelescopeLspAttached"
-		else
-			icon, hl = "○", "TelescopeLspAvailable"
-		end
-		return displayer({
-			{ icon, hl },
-			{ entry.value.name, hl },
-		})
-	end
+	active_lsp_picker = picker
+	active_lsp_picker_bufnr = bufnr
+	active_lsp_picker_augroup = vim.api.nvim_create_augroup("LspStatusPickerLive", { clear = true })
+	vim.api.nvim_create_autocmd({ "LspAttach", "LspDetach" }, {
+		group = active_lsp_picker_augroup,
+		callback = function()
+			vim.schedule(refresh_active_lsp_picker)
+		end,
+	})
 
-	pickers
-		.new({}, {
-			prompt_title = "LSP Status (buffer: " .. (filetype ~= "" and filetype or "none") .. ")",
-			finder = finders.new_table({
-				results = entries,
-				entry_maker = function(entry)
-					return {
-						value = entry,
-						display = make_display,
-						ordinal = entry.name .. " " .. entry.status,
-					}
-				end,
-			}),
-			sorter = conf.generic_sorter({}),
-			previewer = previewers.new_buffer_previewer({
-				title = "LSP Details",
-				define_preview = function(self, entry)
-					local e = entry.value
-					local lines = { e.name, "" }
-					if e.status == "attached" then
-						local c = e.client
-						table.insert(lines, "status: attached")
-						table.insert(lines, "id: " .. c.id)
-						table.insert(lines, "root_dir: " .. (c.root_dir or "n/a"))
-						table.insert(lines, "cmd: " .. table.concat(
-							type(c.config.cmd) == "table" and c.config.cmd or { tostring(c.config.cmd) },
-							" "
-						))
-						table.insert(lines, "filetypes: " .. table.concat(c.config.filetypes or {}, ", "))
-						local attached_bufs = {}
-						for buf, _ in pairs(c.attached_buffers or {}) do
-							table.insert(attached_bufs, vim.api.nvim_buf_get_name(buf))
-						end
-						table.insert(lines, "attached buffers:")
-						vim.list_extend(lines, #attached_bufs > 0 and attached_bufs or { "  (none)" })
-					elseif e.is_lsp then
-						table.insert(lines, "status: installed, not attached")
-						local cfg = e.config or {}
-						table.insert(lines, "cmd: " .. table.concat(
-							type(cfg.cmd) == "table" and cfg.cmd or { tostring(cfg.cmd) },
-							" "
-						))
-						table.insert(lines, "filetypes: " .. table.concat(cfg.filetypes or {}, ", "))
-					else
-						table.insert(lines, "status: installed (Mason tool)")
-						table.insert(lines, "not a language server (formatter/linter/DAP/etc.)")
-					end
-					vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
-				end,
-			}),
-		})
-		:find()
+	-- LspAttach only fires once a client finishes attaching, missing the
+	-- window where it has just spawned and is still initializing (exactly
+	-- the "attaching" signal we want visible). Poll on a short interval too
+	-- so that transition shows up even without a dedicated event for it.
+	active_lsp_picker_timer = vim.uv.new_timer()
+	active_lsp_picker_timer:start(250, 250, vim.schedule_wrap(refresh_active_lsp_picker))
+
+	picker:find()
 end, { desc = "LSP status (Telescope)" })
