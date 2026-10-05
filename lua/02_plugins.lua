@@ -27,6 +27,12 @@ require("lazy").setup({
 			},
 		},
 		{ "theHamsta/nvim-dap-virtual-text" },
+		{
+			"igorlfs/nvim-dap-view",
+			version = "1.*",
+			lazy = false,
+			dependencies = { "mfussenegger/nvim-dap" },
+		},
 		{ "akinsho/toggleterm.nvim", version = "*", config = true },
 		{
 			"saghen/blink.cmp",

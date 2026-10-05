@@ -131,7 +131,12 @@ end, { desc = "DAP: Open evaluate window" })
 local dapui = require("dapui")
 
 vim.keymap.set("n", "<leader>dd", function()
-	vim.ui.select({ "1: Scopes + Stacks / REPL", "2: Scopes + Breakpoints + Stacks / REPL + Console" }, {
+	vim.ui.select({
+		"1: Scopes + Stacks / REPL",
+		"2: Scopes + Breakpoints + Stacks / REPL + Console",
+		"3: DAP View",
+		"4: REPL / Scopes (bottom)",
+	}, {
 		prompt = "Select DAP UI layout:",
 	}, function(_, idx)
 		if not idx then
@@ -141,15 +146,20 @@ vim.keymap.set("n", "<leader>dd", function()
 		if idx == 1 then
 			dapui.open({ layout = 1 })
 			dapui.open({ layout = 2 })
-		else
+		elseif idx == 2 then
 			dapui.open({ layout = 3 })
 			dapui.open({ layout = 4 })
+		elseif idx == 3 then
+			vim.cmd("DapViewOpen")
+		else
+			dapui.open({ layout = 5 })
 		end
 	end)
 end, { desc = "DAP UI Open (pick layout)" })
 vim.keymap.set("n", "<leader>dc", function()
 	dapui.close()
-end, { desc = "DAP UI Close" })
+	vim.cmd("DapViewClose!")
+end, { desc = "DAP UI/View Close" })
 
 -- Toggleterm
 vim.keymap.set("n", "<leader>hh", "<cmd>ToggleTerm direction=float<CR>", { desc = "Open/close floating terminal" })

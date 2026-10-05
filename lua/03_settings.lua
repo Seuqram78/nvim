@@ -220,6 +220,15 @@ require("dapui").setup({
 			size = 15,
 			position = "bottom",
 		},
+		-- Option 4: REPL left, scopes right at bottom
+		{
+			elements = {
+				{ id = "repl", size = 0.5 },
+				{ id = "scopes", size = 0.5 },
+			},
+			size = 15,
+			position = "bottom",
+		},
 	},
 })
 local dap = require("dap")
