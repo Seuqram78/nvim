@@ -128,6 +128,32 @@ require("lazy").setup({
 				},
 			},
 		},
+		{
+			"NStefan002/screenkey.nvim",
+			lazy = false,
+			version = "*",
+			config = function(_, opts)
+				local screenkey = require("screenkey")
+				screenkey.setup(opts)
+				screenkey.toggle()
+
+				local group = vim.api.nvim_create_augroup("screenkey_mode", { clear = true })
+				vim.api.nvim_create_autocmd("ModeChanged", {
+					group = group,
+					callback = function(args)
+						local new_mode = args.match:match("^[^:]+:(.*)$") or vim.api.nvim_get_mode().mode
+						local in_insert = new_mode:sub(1, 1) == "i"
+						local active = screenkey.is_active()
+
+						if in_insert and active then
+							screenkey.toggle()
+						elseif not in_insert and not active then
+							screenkey.toggle()
+						end
+					end,
+				})
+			end,
+		},
 		{ "WhoIsSethDaniel/mason-tool-installer.nvim" },
 		{
 			"MeanderingProgrammer/render-markdown.nvim",
