@@ -54,8 +54,15 @@ vim.keymap.set("n", "<leader>nei", function()
 	require("telescope.builtin").lsp_references()
 end, { desc = "Find usages" })
 
+-- Toggle format on save (global)
+vim.keymap.set("n", "<leader>af", function()
+	vim.g.disable_autoformat = not vim.g.disable_autoformat
+	require("lualine").refresh()
+	vim.notify("Format on save: " .. (vim.g.disable_autoformat and "OFF" or "ON"))
+end, { desc = "Toggle format on save" })
+
 --Harpoon
-local harpoon = require("harpoon-core")
+local harpoon =require("harpoon-core")
 local harpoon_slots = require("harpoon_slots")
 vim.keymap.set("n", "<leader>hv", function()
 	harpoon.add_file()

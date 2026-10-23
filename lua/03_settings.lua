@@ -59,6 +59,19 @@ require("lualine").setup({
 	},
 	sections = {
 		lualine_c = { { "filename", path = 1 } },
+		lualine_x = {
+			{
+				function()
+					return vim.g.disable_autoformat and "AF: off" or "AF: on"
+				end,
+				color = function()
+					return { fg = vim.g.disable_autoformat and "#e06c75" or "#98c379" }
+				end,
+			},
+			"encoding",
+			"fileformat",
+			"filetype",
+		},
 	},
 	tabline = {
 		lualine_a = harpoon_tabline_components,
@@ -178,11 +191,6 @@ require("conform").setup({
 	end,
 })
 
--- vim.keymap.set("n", "<leader>zz", function()
--- 	vim.g.disable_autoformat = not vim.g.disable_autoformat
--- 	vim.notify("Format on save (global): " .. (vim.g.disable_autoformat and "OFF" or "ON"))
--- end, { desc = "Toggle format-on-save (global)" })
---
 -- DAP
 require("dapui").setup({
 	layouts = {
